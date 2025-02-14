@@ -10,6 +10,7 @@ import {
   PluginManifest,
 } from 'obsidian';
 import { isExcluded } from './exclusions';
+import slugify from 'slugify';
 
 const stockIllegalSymbols = /[\\/:|#^[\]]/g;
 
@@ -34,6 +35,7 @@ interface FilenameHeadingSyncPluginSettings {
   newHeadingStyle: HeadingStyle;
   replaceStyle: boolean;
   underlineString: string;
+  slugifyFilename: boolean;
 }
 
 const DEFAULT_SETTINGS: FilenameHeadingSyncPluginSettings = {
@@ -45,6 +47,7 @@ const DEFAULT_SETTINGS: FilenameHeadingSyncPluginSettings = {
   newHeadingStyle: HeadingStyle.Prefix,
   replaceStyle: false,
   underlineString: '===',
+  slugifyFilename: false,
 };
 
 export default class FilenameHeadingSyncPlugin extends Plugin {
@@ -233,7 +236,8 @@ export default class FilenameHeadingSyncPlugin extends Plugin {
       const sanitizedHeading = this.sanitizeHeading(heading.text);
       if (
         sanitizedHeading.length > 0 &&
-        this.sanitizeHeading(file.basename) !== sanitizedHeading
+        (this.sanitizeHeading(file.basename) !== sanitizedHeading ||
+          this.settings.slugifyFilename)
       ) {
         const newPath = `${file.parent?.path}/${sanitizedHeading}.md`;
         this.isRenameInProgress = true;
@@ -396,6 +400,9 @@ export default class FilenameHeadingSyncPlugin extends Plugin {
   }
 
   sanitizeHeading(text: string) {
+    if (this.settings.slugifyFilename) {
+      text = slugify(text, { lower: true, trim: false });
+    }
     // stockIllegalSymbols is a regExp object, but userIllegalSymbols is a list of strings and therefore they are handled separately.
     text = text.replace(stockIllegalSymbols, '');
 
@@ -754,6 +761,18 @@ class FilenameHeadingSyncSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.underlineString)
           .onChange(async (value) => {
             this.plugin.settings.underlineString = value;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName('Slugify filename')
+      .setDesc('Whether this plugin should slugify filename.')
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.slugifyFilename)
+          .onChange(async (value) => {
+            this.plugin.settings.slugifyFilename = value;
             await this.plugin.saveSettings();
           }),
       );
