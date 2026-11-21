@@ -1,3 +1,5 @@
+import slugify from 'slugify';
+
 const stockIllegalSymbols = /[\\/:|#^[\]]/g;
 
 function regExpEscape(str: string): string {
@@ -9,6 +11,8 @@ export interface HeadingSettings {
   spaceReplacementCharacter: string;
   /** Maximum UTF-8 bytes of the filename including ".md". 0 = no limit. */
   maxFilenameBytes?: number;
+  /** Convert the heading into a lowercase URL-friendly slug. */
+  slugifyFilename?: boolean;
 }
 
 const ellipsis = '…';
@@ -70,11 +74,19 @@ export function generateFilenameFromHeading(
   heading: string,
   settings: Pick<
     HeadingSettings,
-    'userIllegalSymbols' | 'spaceReplacementCharacter' | 'maxFilenameBytes'
+    | 'userIllegalSymbols'
+    | 'spaceReplacementCharacter'
+    | 'maxFilenameBytes'
+    | 'slugifyFilename'
   >,
 ): string {
+  let text = heading;
+  if (settings.slugifyFilename) {
+    text = slugify(text, { lower: true, trim: false });
+  }
+
   // Strip stock illegal symbols
-  let text = heading.replace(stockIllegalSymbols, '');
+  text = text.replace(stockIllegalSymbols, '');
 
   // Strip user-defined illegal symbols
   const escaped = settings.userIllegalSymbols.map((str) => regExpEscape(str));
@@ -91,7 +103,7 @@ export function generateFilenameFromHeading(
   return truncateFilename(
     text.trim(),
     settings.maxFilenameBytes ?? 0,
-    settings.spaceReplacementCharacter || ' ',
+    settings.slugifyFilename ? '-' : settings.spaceReplacementCharacter || ' ',
     truncationMarker(settings),
   );
 }
@@ -121,7 +133,10 @@ export function headingMatchesFilename(
   filename: string,
   settings: Pick<
     HeadingSettings,
-    'userIllegalSymbols' | 'spaceReplacementCharacter' | 'maxFilenameBytes'
+    | 'userIllegalSymbols'
+    | 'spaceReplacementCharacter'
+    | 'maxFilenameBytes'
+    | 'slugifyFilename'
   >,
 ): boolean {
   if (

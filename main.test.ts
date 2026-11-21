@@ -563,6 +563,39 @@ describe('generateFilenameFromHeading', () => {
       ).toBe(true);
     });
   });
+  describe('slugify filename', () => {
+    const settings = { ...defaultSettings, slugifyFilename: true };
+
+    it('converts the heading into a lowercase slug', () => {
+      expect(generateFilenameFromHeading('My Cool Note', settings)).toBe(
+        'my-cool-note',
+      );
+    });
+
+    it('transliterates and strips illegal characters', () => {
+      expect(
+        generateFilenameFromHeading('Crème: Brûlée/Recipe', settings),
+      ).toBe('creme-bruleerecipe');
+    });
+
+    it('cuts a long slug at a hyphen', () => {
+      const heading = 'Words '.repeat(60).trim();
+      const filename = generateFilenameFromHeading(heading, {
+        ...settings,
+        maxFilenameBytes: 50,
+      });
+      expect(filename).toBe('words-'.repeat(6) + 'words…');
+    });
+
+    it('leaves the heading unchanged when disabled', () => {
+      expect(
+        generateFilenameFromHeading('My Cool Note', {
+          ...defaultSettings,
+          slugifyFilename: false,
+        }),
+      ).toBe('My Cool Note');
+    });
+  });
 });
 
 describe('generateHeadingFromFilename', () => {
@@ -628,6 +661,13 @@ describe('headingMatchesFilename', () => {
     const settings = { ...defaultSettings, spaceReplacementCharacter: '-' };
     expect(
       headingMatchesFilename('My Cool Note', 'My-Cool-Note', settings),
+    ).toBe(true);
+  });
+
+  it('matches a heading whose filename is slugified', () => {
+    const settings = { ...defaultSettings, slugifyFilename: true };
+    expect(
+      headingMatchesFilename('My Cool Note', 'my-cool-note', settings),
     ).toBe(true);
   });
 

@@ -42,6 +42,7 @@ interface FilenameHeadingSyncPluginSettings {
   insertHeadingIfMissing: boolean;
   spaceReplacementCharacter: string;
   limitFilenameLength: boolean;
+  slugifyFilename: boolean;
 }
 
 const DEFAULT_SETTINGS: FilenameHeadingSyncPluginSettings = {
@@ -57,6 +58,7 @@ const DEFAULT_SETTINGS: FilenameHeadingSyncPluginSettings = {
   insertHeadingIfMissing: true,
   spaceReplacementCharacter: '',
   limitFilenameLength: false,
+  slugifyFilename: false,
 };
 
 /**
@@ -920,6 +922,18 @@ class FilenameHeadingSyncSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.limitFilenameLength)
           .onChange(async (value) => {
             this.plugin.settings.limitFilenameLength = value;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName('Slugify filename')
+      .setDesc('Whether this plugin should slugify filename.')
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.slugifyFilename)
+          .onChange(async (value) => {
+            this.plugin.settings.slugifyFilename = value;
             await this.plugin.saveSettings();
           }),
       );
